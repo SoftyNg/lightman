@@ -1,0 +1,33 @@
+// ✅ Add this buildscript block at the top
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.0.0' // use your exact version
+        classpath 'com.google.gms:google-services:4.3.15' // 🔥 required for Firebase
+    }
+}
+
+// ✅ This section remains
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
