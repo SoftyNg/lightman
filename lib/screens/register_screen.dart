@@ -3,6 +3,7 @@ import 'package:lightman/constants/app_colors.dart';
 import 'package:lightman/models/register_model.dart';
 import 'package:lightman/services/auth_services.dart';
 import 'package:lightman/widgets/app_logo_header.dart';
+import 'email_verification_screen.dart'; // ✅ Import
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -56,10 +57,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       await AuthService().registerWithEmail(user);
-      _showSnackBar("✅ Account created successfully!");
 
-      // Navigate or pop back
-      Navigator.pop(context);
+      // ✅ Redirect to Email Verification Screen with user's email
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EmailVerificationScreen(email: user.email),
+        ),
+      );
     } catch (e) {
       _showSnackBar(e.toString().replaceFirst("Exception: ", ""),
           isError: true);

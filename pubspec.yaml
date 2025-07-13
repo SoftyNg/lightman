@@ -1,6 +1,6 @@
 name: lightman
 description: "A new Flutter project."
-publish_to: 'none' 
+publish_to: 'none'
 
 version: 1.0.0+1
 
@@ -22,6 +22,13 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  remove_alpha_ios: true  # ✅ Fix for App Store transparency warning
 
 flutter:
   uses-material-design: true
@@ -31,5 +38,3 @@ flutter:
     - assets/images/small_logo.png
     - assets/images/woman.png
     - assets/images/onboarding.png
-    
-
