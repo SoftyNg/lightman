@@ -1,9 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lightman/constants/app_colors.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  bool _showBalance = true;
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
+
+  Future<String> _getUserName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    return user?.displayName ?? 'User';
+  }
+
+  void _showMenu() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          ListTile(leading: Icon(Icons.settings), title: Text('Settings')),
+          ListTile(leading: Icon(Icons.help_outline), title: Text('Help')),
+          ListTile(leading: Icon(Icons.logout), title: Text('Logout')),
+        ],
+      ),
+    );
+  }
+
+  void _showNotifications() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          ListTile(
+              leading: Icon(Icons.notifications),
+              title: Text("Your wallet was funded successfully.")),
+          ListTile(
+              leading: Icon(Icons.notifications),
+              title: Text("Your electricity purchase is complete.")),
+          ListTile(
+              leading: Icon(Icons.notifications),
+              title: Text("You earned a bonus unit!")),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,10 +69,17 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const Icon(Icons.menu, color: Colors.black),
-        actions: const [
-          Icon(Icons.notifications_none_outlined, color: Colors.black),
-          SizedBox(width: 16),
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.black),
+          onPressed: _showMenu,
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none_outlined,
+                color: Colors.black),
+            onPressed: _showNotifications,
+          ),
+          const SizedBox(width: 16),
         ],
       ),
       body: SingleChildScrollView(
@@ -23,14 +87,30 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Good Morning',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
+            Text(
+              _getGreeting(),
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Dennis John',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            FutureBuilder<String>(
+              future: _getUserName(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Text('Loading...',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold));
+                } else if (snapshot.hasError || !snapshot.hasData) {
+                  return const Text('User',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold));
+                } else {
+                  return Text(
+                    snapshot.data!,
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
+                  );
+                }
+              },
             ),
             const SizedBox(height: 20),
             Container(
@@ -48,14 +128,24 @@ class DashboardScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        '₦26,700',
-                        style: TextStyle(
+                      Text(
+                        _showBalance ? '₦26,700' : '••••••',
+                        style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Icon(Icons.visibility_off_outlined, color: Colors.grey),
+                      IconButton(
+                        icon: Icon(
+                          _showBalance
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility,
+                          color: Colors.grey,
+                        ),
+                        onPressed: () {
+                          setState(() => _showBalance = !_showBalance);
+                        },
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
