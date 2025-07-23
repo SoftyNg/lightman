@@ -70,10 +70,10 @@ class _HomeScreenState extends State<HomeScreen>
                 const SizedBox(height: 20),
 
                 // 📝 Heading Text
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24.0),
                   child: Column(
-                    children: const [
+                    children: [
                       Text(
                         'Instant power\npayments, without stress',
                         textAlign: TextAlign.center,

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lightman/constants/app_colors.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lightman/screens/fund_wallet_screen.dart'; // <-- for webview
+import 'package:lightman/screens/buy_power_screen.dart'; // Replace with actual path
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -12,6 +13,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _showBalance = true;
+
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Good Morning';
@@ -29,9 +31,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Column(
+      builder: (context) => const Column(
         mainAxisSize: MainAxisSize.min,
-        children: const [
+        children: [
           ListTile(leading: Icon(Icons.settings), title: Text('Settings')),
           ListTile(leading: Icon(Icons.help_outline), title: Text('Help')),
           ListTile(leading: Icon(Icons.logout), title: Text('Logout')),
@@ -153,7 +155,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FundWalletScreen(
+                                  paymentUrl:
+                                      "https://paystack.shop/pay/0va83vev7e", // ← replace with dynamic session link
+                                ),
+                              ),
+                            );
+                          },
                           icon: const Icon(Icons.account_balance_wallet),
                           label: const Text('Fund wallet'),
                           style: ElevatedButton.styleFrom(
@@ -166,7 +178,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const BuyPowerScreen(),
+                              ),
+                            );
+                          },
                           icon: const Icon(Icons.flash_on),
                           label: const Text('Buy electricity'),
                           style: ElevatedButton.styleFrom(
@@ -191,8 +210,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Column(
-                      children: const [
+                    child: const Column(
+                      children: [
                         Icon(Icons.money_off, color: Colors.red),
                         SizedBox(height: 8),
                         Text('Spent'),
@@ -210,8 +229,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Column(
-                      children: const [
+                    child: const Column(
+                      children: [
                         Icon(Icons.bolt, color: Colors.green),
                         SizedBox(height: 8),
                         Text('Units'),
@@ -224,9 +243,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
+              children: [
                 Text(
                   'Recent transactions',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),

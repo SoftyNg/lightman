@@ -22,6 +22,11 @@ dependencies:
   lucide_icons: ^0.257.0
   intl: ^0.17.0
 
+  # ✅ Payment and WebView
+  webview_flutter: ^4.4.2
+  http: ^1.2.1
+  url_launcher: ^6.2.6
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
