@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import '../services/vt_pass_services.dart'; // 👈 Make sure the path is correct
+import '../services/vt_pass_services.dart'; // Make sure path is correct
 
 class BuyPowerScreen extends StatefulWidget {
   const BuyPowerScreen({Key? key}) : super(key: key);
@@ -13,16 +12,16 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final List<Map<String, String>> discos = [
-    {"name": "Ikeja Electric", "code": "ikedc"},
-    {"name": "Eko Electric", "code": "eko"},
-    {"name": "Abuja Electric", "code": "aedc"},
-    {"name": "Kano Electric", "code": "kedco"},
-    {"name": "Port Harcourt Electric", "code": "phed"},
-    {"name": "Jos Electric", "code": "jed"},
-    {"name": "Benin Electric", "code": "bedc"},
-    {"name": "Ibadan Electric", "code": "ibedc"},
-    {"name": "Enugu Electric", "code": "eedc"},
-    {"name": "Yola Electric", "code": "yedc"},
+    {"name": "Ikeja Electric", "code": "ikeja-electric"},
+    {"name": "Eko Electric", "code": "eko-electric"},
+    {"name": "Abuja Electric", "code": "abuja-electric"},
+    {"name": "Kano Electric", "code": "kano-electric"},
+    {"name": "Port Harcourt Electric", "code": "portharcourt-electric"},
+    {"name": "Jos Electric", "code": "jos-electric"},
+    {"name": "Benin Electric", "code": "benin-electric"},
+    {"name": "Ibadan Electric", "code": "ibadan-electric"},
+    {"name": "Enugu Electric", "code": "enugu-electric"},
+    {"name": "Yola Electric", "code": "yola-electric"},
   ];
 
   String? selectedDisco;
@@ -44,13 +43,13 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
     final discoCode = selectedDisco!;
     final meterNumber = meterNumberController.text.trim();
     final amount = amountController.text.trim();
-    final type = meterType!.toLowerCase();
+    final type = meterType!.toLowerCase(); // 'prepaid' or 'postpaid'
 
     showLoading(true);
 
     try {
-      // Step 1: Verify Meter (Optional but good for user feedback)
-      final verifyResult = await VtpassService.verifyMeter(
+      // 🔍 Step 1: Verify meter number
+      final verifyResult = await VtPassService.verifyMeter(
         disco: discoCode,
         meterNumber: meterNumber,
         meterType: type,
@@ -58,33 +57,42 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
 
       if (verifyResult['code'] != '000') {
         showLoading(false);
-        showSnack(
-            'Meter verification failed: ${verifyResult['content']['error']}');
+        final errorMsg = verifyResult['message'] ??
+            verifyResult['response_description'] ??
+            verifyResult['content']?['error'] ??
+            'Meter verification failed';
+        showSnack('❌ $errorMsg');
         return;
       }
 
-      final customerName = verifyResult['content']['Customer_Name'];
-      showSnack('Verified: $customerName');
+      final customerName = verifyResult['Customer_Name'] ??
+          verifyResult['content']?['Customer_Name'] ??
+          'Customer';
 
-      // Step 2: Buy Electricity
-      final buyResult = await VtpassService.buyElectricity(
+      showSnack('✅ Verified: $customerName');
+
+      // ⚡ Step 2: Buy electricity
+      final buyResult = await VtPassService.buyElectricity(
         disco: discoCode,
         meterNumber: meterNumber,
         meterType: type,
-        phone: '08012345678', // replace with user's phone later
+        phone: '08012345678', // Replace with user's phone
         amount: amount,
       );
 
       showLoading(false);
 
       if (buyResult['code'] == '000') {
-        showSnack('Electricity purchase successful!');
+        showSnack('✅ Electricity purchase successful!');
       } else {
-        showSnack('Failed: ${buyResult['response_description']}');
+        final errorMsg = buyResult['message'] ??
+            buyResult['response_description'] ??
+            'Purchase failed';
+        showSnack('❌ $errorMsg');
       }
     } catch (e) {
       showLoading(false);
-      showSnack('Error: ${e.toString()}');
+      showSnack('❌ Error: ${e.toString()}');
     }
   }
 
@@ -103,7 +111,7 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
         builder: (_) => const Center(child: CircularProgressIndicator()),
       );
     } else {
-      Navigator.pop(context);
+      if (Navigator.canPop(context)) Navigator.pop(context);
     }
   }
 

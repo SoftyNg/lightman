@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lightman/constants/app_colors.dart';
 import 'package:lightman/screens/fund_wallet_screen.dart'; // <-- for webview
 import 'package:lightman/screens/buy_power_screen.dart'; // Replace with actual path
+import 'package:lightman/screens/profile_screen.dart'; // Adjust path if needed
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -13,6 +14,24 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _showBalance = true;
+
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() => _selectedIndex = index);
+
+    if (index == 1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const BuyPowerScreen()),
+      );
+    } else if (index == 2) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ProfileScreen()),
+      );
+    }
+  }
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -265,7 +284,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
         selectedItemColor: AppColors.primaryGreen,
         items: const [
           BottomNavigationBarItem(
