@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/vt_pass_services.dart'; // Make sure path is correct
+import '../services/vt_pass_services.dart';
+import 'order_review_screen.dart';
 
 class BuyPowerScreen extends StatefulWidget {
   const BuyPowerScreen({Key? key}) : super(key: key);
@@ -37,26 +38,34 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
     super.dispose();
   }
 
-  Future<void> _buyElectricity() async {
+  double calculateServiceCharge(double amount) {
+    if (amount <= 0) return 0;
+    int blocks = (amount / 5000).ceil();
+    return blocks * 100;
+  }
+
+  Future<void> _verifyMeterAndProceed() async {
     if (!_formKey.currentState!.validate()) return;
 
     final discoCode = selectedDisco!;
+    final discoName =
+        discos.firstWhere((d) => d['code'] == discoCode)['name'] ?? '';
     final meterNumber = meterNumberController.text.trim();
-    final amount = amountController.text.trim();
-    final type = meterType!.toLowerCase(); // 'prepaid' or 'postpaid'
+    final amount = double.tryParse(amountController.text.trim()) ?? 0.0;
+    final type = meterType!.toLowerCase();
 
     showLoading(true);
 
     try {
-      // 🔍 Step 1: Verify meter number
       final verifyResult = await VtPassService.verifyMeter(
         disco: discoCode,
         meterNumber: meterNumber,
         meterType: type,
       );
 
+      showLoading(false);
+
       if (verifyResult['code'] != '000') {
-        showLoading(false);
         final errorMsg = verifyResult['message'] ??
             verifyResult['response_description'] ??
             verifyResult['content']?['error'] ??
@@ -65,31 +74,30 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
         return;
       }
 
-      final customerName = verifyResult['Customer_Name'] ??
-          verifyResult['content']?['Customer_Name'] ??
+      final customerName = verifyResult['content']?['Customer_Name'] ??
+          verifyResult['Customer_Name'] ??
           'Customer';
+      final customerAddress = verifyResult['content']?['Address'] ??
+          verifyResult['Address'] ??
+          'Unknown Address';
 
-      showSnack('✅ Verified: $customerName');
-
-      // ⚡ Step 2: Buy electricity
-      final buyResult = await VtPassService.buyElectricity(
-        disco: discoCode,
-        meterNumber: meterNumber,
-        meterType: type,
-        phone: '08012345678', // Replace with user's phone
-        amount: amount,
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ReviewOrderScreen(
+            discoName: discoName,
+            discoCode: discoCode,
+            meterNumber: meterNumber,
+            meterType: meterType!,
+            customerName: customerName,
+            customerAddress: customerAddress,
+            electricityAmount: amount,
+            serviceCharge: calculateServiceCharge(amount),
+            meterName: customerName,
+            address: customerAddress,
+          ),
+        ),
       );
-
-      showLoading(false);
-
-      if (buyResult['code'] == '000') {
-        showSnack('✅ Electricity purchase successful!');
-      } else {
-        final errorMsg = buyResult['message'] ??
-            buyResult['response_description'] ??
-            'Purchase failed';
-        showSnack('❌ $errorMsg');
-      }
     } catch (e) {
       showLoading(false);
       showSnack('❌ Error: ${e.toString()}');
@@ -203,7 +211,7 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _buyElectricity,
+                  onPressed: _verifyMeterAndProceed,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00C853),
                     shape: const StadiumBorder(),

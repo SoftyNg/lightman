@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../config.dart'; // <-- import your Config class
 
 class VtPassService {
-  static final String _baseUrl = dotenv.env['VT_PASS_BASE_URL']!;
-  static final String _publicKey = dotenv.env['VT_PASS_PUBLIC_KEY']!;
-  static final String _secretKey = dotenv.env['VT_PASS_SECRET_KEY']!;
-  static final String _apiKey = dotenv.env['VT_PASS_API_KEY']!;
+  static final String _baseUrl = Config.vtPassBaseUrl;
+  static final String _publicKey = Config.vtPassPublicKey;
+  static final String _secretKey = Config.vtPassSecretKey;
+  static final String _apiKey = Config.vtPassApiKey;
 
   /// ✅ Headers for VTPass API
   static Map<String, String> _authHeaders() {

@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 import 'firebase_options.dart';
 import 'package:lightman/screens/splash_screen.dart';
 import 'package:lightman/constants/app_colors.dart';
+import 'config.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
-  try {
-    await dotenv.load(fileName: ".env");
-  } catch (e) {
-    debugPrint("Failed to load .env: $e");
-  }
+  await dotenv.load(fileName: ".env");
+
+  // Initialize config after dotenv loads
+  Config.init();
 
   // Initialize Firebase
   await Firebase.initializeApp(
