@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/vt_pass_services.dart';
-import 'order_review_screen.dart';
+import 'review_order_screen.dart'; // ✅ ensure this matches your filename
 
 class BuyPowerScreen extends StatefulWidget {
   const BuyPowerScreen({Key? key}) : super(key: key);
@@ -30,11 +30,13 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
 
   final meterNumberController = TextEditingController();
   final amountController = TextEditingController();
+  final phoneController = TextEditingController(); // ✅ phone number controller
 
   @override
   void dispose() {
     meterNumberController.dispose();
     amountController.dispose();
+    phoneController.dispose();
     super.dispose();
   }
 
@@ -51,8 +53,9 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
     final discoName =
         discos.firstWhere((d) => d['code'] == discoCode)['name'] ?? '';
     final meterNumber = meterNumberController.text.trim();
-    final amount = double.tryParse(amountController.text.trim()) ?? 0.0;
+    final double amount = double.tryParse(amountController.text.trim()) ?? 0.0;
     final type = meterType!.toLowerCase();
+    final phone = phoneController.text.trim();
 
     showLoading(true);
 
@@ -95,6 +98,7 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
             serviceCharge: calculateServiceCharge(amount),
             meterName: customerName,
             address: customerAddress,
+            phone: phone, // ✅ pass phone forward
           ),
         ),
       );
@@ -201,6 +205,15 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
                         decoration: _inputDecoration('Amount'),
                         validator: (value) => value == null || value.isEmpty
                             ? 'Enter amount'
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: phoneController,
+                        keyboardType: TextInputType.phone,
+                        decoration: _inputDecoration('Phone number'),
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Enter phone number'
                             : null,
                       ),
                     ],
