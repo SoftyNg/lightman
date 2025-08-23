@@ -7,7 +7,8 @@ class Config {
   static late final String vtPassApiKey;
   static late final String vtPassBaseUrl;
   static late final String paystackPublicKey;
-  static const String paystackBackendUrl = "https://karlotenergy.com/lightman";
+  static const String paystackBackendUrl =
+      "https://realestatearena.com.ng/lightman";
 
   static void init() {
     vtPassPublicKey = dotenv.env['VT_PASS_PUBLIC_KEY'] ?? '';
