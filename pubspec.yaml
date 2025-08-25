@@ -27,6 +27,8 @@ dependencies:
   http: ^1.2.1
   url_launcher: ^6.2.6
   flutter_dotenv: ^5.1.0
+  share_plus: ^10.0.0
+  pdf: ^3.11.3
 
 dev_dependencies:
   flutter_test:
@@ -49,3 +51,4 @@ flutter:
     - assets/images/small_logo.png
     - assets/images/woman.png
     - assets/images/onboarding.png
+    - assets/images/whatsapp.png

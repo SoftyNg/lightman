@@ -10,7 +10,8 @@ class PaymentPaystackScreen extends StatefulWidget {
   final String meterNumber;
   final String meterType;
   final String disco;
-  final double amount;
+  final double amount; // ✅ total amount (Paystack)
+  final double unitsAmount; // ✅ electricity-only (for VTpass)
   final String phone;
   final String email;
 
@@ -20,6 +21,7 @@ class PaymentPaystackScreen extends StatefulWidget {
     required this.meterType,
     required this.disco,
     required this.amount,
+    required this.unitsAmount,
     required this.phone,
     required this.email,
   });
@@ -89,9 +91,7 @@ class _PaymentPaystackScreenState extends State<PaymentPaystackScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => FailedPage(
-                          message: "Payment was cancelled",
-                          amount: '',
-                          onRetry: () {},
+                          amount: widget.amount.toString(), // ✅ total only
                         ),
                       ),
                       (route) => false,
@@ -127,9 +127,7 @@ class _PaymentPaystackScreenState extends State<PaymentPaystackScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => FailedPage(
-              message: "Missing email or disco",
-              amount: '',
-              onRetry: () {},
+              amount: widget.amount.toString(), // ✅ total only
             ),
           ),
           (route) => false,
@@ -145,44 +143,14 @@ class _PaymentPaystackScreenState extends State<PaymentPaystackScreen> {
           "meterNumber": widget.meterNumber,
           "meterType": widget.meterType,
           "disco": widget.disco,
-          "amount": widget.amount.toString(),
+          "amount": widget.amount.toString(), // total
+          "unitsAmount": widget.unitsAmount.toString(), // ✅ electricity-only
           "phone": widget.phone,
           "email": widget.email,
         }),
       );
 
       final data = jsonDecode(response.body);
-
-      switch (data['message'] ?? "") {
-        case "Missing required parameters":
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (_) => FailedPage(
-                message:
-                    "Backend error: Missing required parameters (email/disco)",
-                amount: '',
-                onRetry: () {},
-              ),
-            ),
-            (route) => false,
-          );
-          return;
-        case "Payment verification failed":
-        case "VTPass purchase failed":
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (_) => FailedPage(
-                message: data['message'] ?? "Transaction failed",
-                amount: '',
-                onRetry: () {},
-              ),
-            ),
-            (route) => false,
-          );
-          return;
-      }
 
       if (data["status"] == true) {
         Navigator.pushAndRemoveUntil(
@@ -191,7 +159,7 @@ class _PaymentPaystackScreenState extends State<PaymentPaystackScreen> {
             builder: (_) => SuccessPage(
               token: data["token"] ?? "",
               units: data["units"]?.toString() ?? "",
-              amount: widget.amount.toString(),
+              amount: widget.amount.toString(), // ✅ only total again
               meterNumber: widget.meterNumber,
               discoName: widget.disco,
             ),
@@ -203,9 +171,7 @@ class _PaymentPaystackScreenState extends State<PaymentPaystackScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => FailedPage(
-              message: data['message'] ?? "Transaction failed",
-              amount: '',
-              onRetry: () {},
+              amount: widget.amount.toString(), // ✅ only total
             ),
           ),
           (Route<dynamic> route) => false,
@@ -217,9 +183,7 @@ class _PaymentPaystackScreenState extends State<PaymentPaystackScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => FailedPage(
-            message: "Error verifying payment: $e",
-            amount: '',
-            onRetry: () {},
+            amount: widget.amount.toString(), // ✅ only total
           ),
         ),
         (Route<dynamic> route) => false,

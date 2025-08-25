@@ -7,6 +7,8 @@ class SummaryPage extends StatelessWidget {
   final String amount;
   final String meterNumber;
   final String discoName;
+  final String meterType;
+  final String customerName;
 
   const SummaryPage({
     super.key,
@@ -16,8 +18,8 @@ class SummaryPage extends StatelessWidget {
     required this.amount,
     required this.meterNumber,
     required this.discoName,
-    required String meterType,
-    required String customerName,
+    required this.meterType,
+    required this.customerName,
   });
 
   @override
@@ -62,7 +64,9 @@ class SummaryPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
+                _buildRow("Customer Name", customerName),
                 _buildRow("Meter Number", meterNumber),
+                _buildRow("Meter Type", meterType),
                 _buildRow("Disco", discoName),
                 _buildRow("Amount", "₦$amount"),
                 _buildRow("Units", units.isNotEmpty ? units : "N/A"),

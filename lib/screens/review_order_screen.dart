@@ -12,7 +12,7 @@ class ReviewOrderScreen extends StatefulWidget {
   final String meterName;
   final String address;
   final String customerAddress;
-  final double electricityAmount;
+  final double electricityAmount; // ✅ this is the units amount
   final double serviceCharge;
   final String phone;
 
@@ -65,7 +65,7 @@ class _ReviewOrderScreenState extends State<ReviewOrderScreen> {
       return;
     }
 
-    final total = widget.electricityAmount + widget.serviceCharge;
+    final total = widget.electricityAmount + widget.serviceCharge; // ✅ total
     final enteredPhone = phoneController.text.trim();
 
     final result = await Navigator.push(
@@ -75,7 +75,8 @@ class _ReviewOrderScreenState extends State<ReviewOrderScreen> {
           meterNumber: widget.meterNumber,
           meterType: widget.meterType,
           disco: widget.discoCode,
-          amount: total,
+          amount: total, // ✅ Paystack charge
+          unitsAmount: widget.electricityAmount, // ✅ send to PHP for VTpass
           phone: enteredPhone,
           email: email,
         ),
