@@ -91,7 +91,7 @@ class _PaymentPaystackScreenState extends State<PaymentPaystackScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => FailedPage(
-                          amount: widget.amount.toString(), // ✅ total only
+                          amount: widget.amount.toString(), // total only
                         ),
                       ),
                       (route) => false,
@@ -127,7 +127,7 @@ class _PaymentPaystackScreenState extends State<PaymentPaystackScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => FailedPage(
-              amount: widget.amount.toString(), // ✅ total only
+              amount: widget.amount.toString(),
             ),
           ),
           (route) => false,
@@ -159,9 +159,12 @@ class _PaymentPaystackScreenState extends State<PaymentPaystackScreen> {
             builder: (_) => SuccessPage(
               token: data["token"] ?? "",
               units: data["units"]?.toString() ?? "",
-              amount: widget.amount.toString(), // ✅ only total again
+              amount: widget.amount.toString(), // total
               meterNumber: widget.meterNumber,
               discoName: widget.disco,
+              meterType: widget.meterType,
+              customerName: data["customer_name"] ?? "",
+              transaction: data, // ✅ full payload from backend
             ),
           ),
           (Route<dynamic> route) => false,
@@ -171,7 +174,7 @@ class _PaymentPaystackScreenState extends State<PaymentPaystackScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => FailedPage(
-              amount: widget.amount.toString(), // ✅ only total
+              amount: widget.amount.toString(),
             ),
           ),
           (Route<dynamic> route) => false,
@@ -183,7 +186,7 @@ class _PaymentPaystackScreenState extends State<PaymentPaystackScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => FailedPage(
-            amount: widget.amount.toString(), // ✅ only total
+            amount: widget.amount.toString(),
           ),
         ),
         (Route<dynamic> route) => false,

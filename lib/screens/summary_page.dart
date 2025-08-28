@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class SummaryPage extends StatelessWidget {
   final String token;
-  final dynamic transaction; // ✅ make it dynamic (could be Map or String)
+  final dynamic transaction; // can be Map or String
   final String units;
   final String amount;
   final String meterNumber;
@@ -29,12 +29,14 @@ class SummaryPage extends StatelessWidget {
     String status = "N/A";
     String date = "N/A";
 
-    if (transaction is Map<String, dynamic>) {
-      transactionId = transaction["transactionId"]?.toString() ?? "N/A";
-      status = transaction["status"]?.toString() ?? "N/A";
-      date = transaction["date"]?.toString() ?? "N/A";
-    } else if (transaction is String) {
-      transactionId = transaction; // if backend sent just a string
+    if (transaction is Map) {
+      // Handle any type of map safely
+      final tx = transaction.cast<String, dynamic>();
+      transactionId = tx["transactionId"]?.toString() ?? "N/A";
+      status = tx["status"]?.toString() ?? "N/A";
+      date = tx["date"]?.toString() ?? "N/A";
+    } else if (transaction is String && transaction.isNotEmpty) {
+      transactionId = transaction;
     }
 
     return Scaffold(
@@ -70,7 +72,7 @@ class SummaryPage extends StatelessWidget {
                 _buildRow("Disco", discoName),
                 _buildRow("Amount", "₦$amount"),
                 _buildRow("Units", units.isNotEmpty ? units : "N/A"),
-                _buildRow("Token", token),
+                _buildRow("Token", token.isNotEmpty ? token : "N/A"),
                 const Divider(height: 32),
                 const Text(
                   "Transaction Details",
@@ -92,6 +94,7 @@ class SummaryPage extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
           onPressed: () {
+            // ✅ Pop back to dashboard (first route)
             Navigator.popUntil(context, (route) => route.isFirst);
           },
           style: ElevatedButton.styleFrom(

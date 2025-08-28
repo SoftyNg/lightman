@@ -14,6 +14,9 @@ class SuccessPage extends StatelessWidget {
   final String amount; // ✅ Total amount (Paystack paid)
   final String meterNumber;
   final String discoName;
+  final Map<String, dynamic>? transaction; // ✅ VTpass transaction object
+  final String meterType;
+  final String customerName;
 
   const SuccessPage({
     super.key,
@@ -22,29 +25,97 @@ class SuccessPage extends StatelessWidget {
     required this.amount,
     required this.meterNumber,
     required this.discoName,
+    required this.transaction,
+    required this.meterType,
+    required this.customerName,
   });
 
   // ✅ Generate and share PDF receipt
   Future<void> _generateAndShareReceipt() async {
     final pdf = pw.Document();
 
+    const brandColor = PdfColor.fromInt(0xFF00C950); // ✅ updated brand green
+
+    // Load logo from assets
+    final logo = pw.MemoryImage(
+      (await rootBundle.load("assets/images/small_logo.png"))
+          .buffer
+          .asUint8List(),
+    );
+
     pdf.addPage(
       pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(24),
         build: (pw.Context context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: [
-            pw.Text("Electricity Payment Receipt",
-                style:
-                    pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
-            pw.SizedBox(height: 20),
-            pw.Text("Meter Number: $meterNumber"),
-            pw.Text("Disco: $discoName"),
-            pw.Text("Units: $units"),
-            pw.Text("Amount Paid: ₦$amount"),
-            pw.Text("Token: $token"),
-            pw.SizedBox(height: 20),
-            pw.Text("Thank you for your payment!",
-                style: pw.TextStyle(fontSize: 14)),
+            // ✅ Logo & Title
+            pw.Center(child: pw.Image(logo, height: 70)),
+            pw.SizedBox(height: 12),
+            pw.Center(
+              child: pw.Text(
+                "Electricity Payment Receipt",
+                style: pw.TextStyle(
+                  fontSize: 22,
+                  fontWeight: pw.FontWeight.bold,
+                  color: brandColor,
+                ),
+              ),
+            ),
+            pw.SizedBox(height: 24),
+
+            // ✅ Table with transaction details
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+              columnWidths: {
+                0: pw.FlexColumnWidth(3),
+                1: pw.FlexColumnWidth(5),
+              },
+              children: [
+                _tableRow("Customer Name", customerName),
+                _tableRow("Meter Number", meterNumber),
+                _tableRow("Disco", discoName),
+                _tableRow("Meter Type", meterType),
+                _tableRow("Units", "$units kWh"),
+                _tableRow("Amount Paid", "₦$amount"),
+                _tableRow("Token", token),
+                _tableRow(
+                    "Transaction ID", transaction?['transactionId'] ?? "N/A"),
+                _tableRow("Status", transaction?['status'] ?? "N/A"),
+                _tableRow(
+                  "Date",
+                  transaction?['date'] ??
+                      DateTime.now().toString().substring(0, 19),
+                ),
+              ],
+            ),
+
+            pw.SizedBox(height: 40),
+
+            // ✅ Thank you note
+            pw.Center(
+              child: pw.Text(
+                "Thank you for your payment!",
+                style: pw.TextStyle(
+                  fontSize: 14,
+                  fontWeight: pw.FontWeight.bold,
+                  color: brandColor,
+                ),
+              ),
+            ),
+
+            pw.Spacer(),
+
+            // ✅ Footer contact info
+            pw.Divider(),
+            pw.Center(
+              child: pw.Text(
+                "Need help? Call us at: +234-800-123-4567",
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(fontSize: 12, color: PdfColors.grey700),
+              ),
+            ),
           ],
         ),
       ),
@@ -54,18 +125,40 @@ class SuccessPage extends StatelessWidget {
     final file = File("${output.path}/receipt.pdf");
     await file.writeAsBytes(await pdf.save());
 
-    await Share.shareXFiles([XFile(file.path)],
-        text: "Here is your electricity payment receipt.");
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: "Here is your electricity payment receipt.",
+    );
+  }
+
+  // ✅ Helper for PDF table rows
+  pw.TableRow _tableRow(String label, String value) {
+    return pw.TableRow(
+      children: [
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(8),
+          child: pw.Text(
+            label,
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+          ),
+        ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(8),
+          child: pw.Text(value),
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    const brandColor = Color(0xFF00C950); // ✅ updated brand green
+
     return Scaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // ✅ Done button
             Align(
               alignment: Alignment.topRight,
               child: TextButton(
@@ -73,32 +166,24 @@ class SuccessPage extends StatelessWidget {
                 child: const Text(
                   "Done",
                   style: TextStyle(
-                    color: Colors.green,
+                    color: brandColor,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
 
-            // ✅ Success icon
-            const Icon(Icons.check_circle, color: Colors.green, size: 100),
-
+            const Icon(Icons.check_circle, color: brandColor, size: 100),
             const SizedBox(height: 10),
 
             const Text(
               "Successful",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
-
             const SizedBox(height: 10),
 
-            // ✅ Total amount (copyable)
             GestureDetector(
               onLongPress: () {
                 Clipboard.setData(ClipboardData(text: amount));
@@ -108,27 +193,16 @@ class SuccessPage extends StatelessWidget {
               },
               child: Text(
                 "₦$amount",
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
             ),
-
             const SizedBox(height: 5),
 
-            // ✅ Units
-            Text(
-              "$units units",
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-            ),
-
+            Text("$units units",
+                style: const TextStyle(fontSize: 16, color: Colors.grey)),
             const SizedBox(height: 20),
 
-            // ✅ Token box
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
               padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
@@ -150,7 +224,7 @@ class SuccessPage extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.copy, size: 22, color: Colors.green),
+                    icon: const Icon(Icons.copy, size: 22, color: brandColor),
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: token));
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -161,18 +235,15 @@ class SuccessPage extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 30),
 
-            // ✅ Action buttons
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _actionButton(Icons.share, "Share Receipt", () {
-                    _generateAndShareReceipt();
-                  }),
+                  _actionButton(
+                      Icons.share, "Share Receipt", _generateAndShareReceipt),
                   _actionButton(Icons.receipt_long, "View Details", () {
                     Navigator.push(
                       context,
@@ -183,9 +254,9 @@ class SuccessPage extends StatelessWidget {
                           amount: amount,
                           meterNumber: meterNumber,
                           discoName: discoName,
-                          transaction: null,
-                          meterType: '',
-                          customerName: '',
+                          transaction: transaction,
+                          meterType: meterType,
+                          customerName: customerName,
                         ),
                       ),
                     );
@@ -196,6 +267,18 @@ class SuccessPage extends StatelessWidget {
                 ],
               ),
             ),
+
+            const Spacer(),
+
+            // ✅ Footer on screen
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Text(
+                "Need help? Call us at: +234-800-123-4567",
+                style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ],
         ),
       ),
@@ -203,6 +286,7 @@ class SuccessPage extends StatelessWidget {
   }
 
   Widget _actionButton(IconData icon, String label, VoidCallback onTap) {
+    const brandColor = Color(0xFF00C950); // ✅ updated brand green
     return Column(
       children: [
         InkWell(
@@ -211,17 +295,15 @@ class SuccessPage extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.green.shade50,
+              color: brandColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: Colors.green, size: 28),
+            child: Icon(icon, color: brandColor, size: 28),
           ),
         ),
         const SizedBox(height: 6),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-        ),
+        Text(label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
       ],
     );
   }
