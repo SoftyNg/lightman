@@ -1,9 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:lightman/constants/app_colors.dart';
-import 'package:lightman/models/register_model.dart';
-import 'package:lightman/services/auth_services.dart';
 import 'package:lightman/widgets/app_logo_header.dart';
-import 'email_verification_screen.dart'; // ✅ Import
+import 'email_verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -26,6 +26,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
 
+  final String apiUrl =
+      "https://realestatearena.com.ng/register.php"; // External link for registration
+
   @override
   void dispose() {
     _firstNameController.dispose();
@@ -37,7 +40,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _submitForm() async {
+  Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_passwordController.text != _confirmPasswordController.text) {
@@ -45,29 +48,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    final user = RegisterModel(
-      firstName: _firstNameController.text.trim(),
-      lastName: _lastNameController.text.trim(),
-      phone: _phoneController.text.trim(),
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-    );
-
     setState(() => _isLoading = true);
 
     try {
-      await AuthService().registerWithEmail(user);
-
-      // ✅ Redirect to Email Verification Screen with user's email
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => EmailVerificationScreen(email: user.email),
-        ),
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "first_name": _firstNameController.text.trim(),
+          "last_name": _lastNameController.text.trim(),
+          "phone": _phoneController.text.trim(),
+          "email": _emailController.text.trim(),
+          "password": _passwordController.text,
+        }),
       );
+
+      final result = jsonDecode(response.body);
+
+      if (result["status"] == "success") {
+        _showSnackBar(result["message"]);
+
+        // ✅ Redirect to Email Verification screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                EmailVerificationScreen(email: _emailController.text.trim()),
+          ),
+        );
+      } else {
+        _showSnackBar(result["message"], isError: true);
+      }
     } catch (e) {
-      _showSnackBar(e.toString().replaceFirst("Exception: ", ""),
-          isError: true);
+      _showSnackBar("Something went wrong: $e", isError: true);
     } finally {
       setState(() => _isLoading = false);
     }
@@ -145,16 +158,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: _buildTextField(
+                      child: _buildPhoneField(
                         controller: _phoneController,
                         label: 'Phone Number',
-                        keyboardType: TextInputType.phone,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: AppColors.primaryGreen,
-                          ),
-                        ),
                       ),
                     ),
                   ],
@@ -162,10 +168,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
 
                 // Email
-                _buildTextField(
+                _buildEmailField(
                   controller: _emailController,
                   label: 'Email',
-                  keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 16),
 
@@ -239,7 +244,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
-    InputBorder? border,
     TextInputType keyboardType = TextInputType.text,
   }) {
     return TextFormField(
@@ -251,11 +255,68 @@ class _RegisterScreenState extends State<RegisterScreen> {
         labelText: label,
         filled: true,
         fillColor: Colors.grey[200],
-        border: border ??
-            OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide.none,
-            ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmailField({
+    required TextEditingController controller,
+    required String label,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: TextInputType.emailAddress,
+      validator: (val) {
+        if (val == null || val.trim().isEmpty) {
+          return '$label is required';
+        }
+        // ✅ Email validation regex
+        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+        if (!emailRegex.hasMatch(val.trim())) {
+          return 'Enter a valid email';
+        }
+        return null;
+      },
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: Colors.grey[200],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhoneField({
+    required TextEditingController controller,
+    required String label,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: TextInputType.phone,
+      validator: (val) {
+        if (val == null || val.trim().isEmpty) {
+          return '$label is required';
+        }
+        if (!RegExp(r'^[0-9]{11}$').hasMatch(val.trim())) {
+          return 'Phone number must be 11 digits';
+        }
+        return null;
+      },
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: Colors.grey[200],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide.none,
+        ),
       ),
     );
   }
@@ -269,8 +330,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return TextFormField(
       controller: controller,
       obscureText: obscure,
-      validator: (val) =>
-          val == null || val.length < 6 ? 'Password too short' : null,
+      validator: (val) {
+        if (val == null || val.isEmpty) return 'Password is required';
+        if (val.length < 6) return 'Password too short';
+        return null;
+      },
       decoration: InputDecoration(
         labelText: label,
         filled: true,

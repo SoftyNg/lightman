@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/vt_pass_services.dart';
 import 'review_order_screen.dart'; // ✅ ensure this matches your filename
 
@@ -31,12 +33,55 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
   final meterNumberController = TextEditingController();
   final amountController = TextEditingController();
   final phoneController = TextEditingController(); // ✅ phone number controller
+  final emailController = TextEditingController(); // ✅ email controller
+
+  @override
+  void initState() {
+    super.initState();
+    _getUserDetails();
+  }
+
+  Future<void> _getUserDetails() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userDataString = prefs.getString('user_data');
+
+      print('Raw user data string: $userDataString'); // Debug
+
+      if (userDataString != null) {
+        final userData = jsonDecode(userDataString);
+
+        print('Parsed user data: $userData'); // Debug
+        print('Phone field: ${userData['phone']}'); // Debug
+        print('Email field: ${userData['email']}'); // Debug
+
+        setState(() {
+          // Handle phone number properly - convert from number to string
+          var phoneValue = userData['phone'];
+          if (phoneValue != null) {
+            phoneController.text = phoneValue.toString().replaceAll('.0', '');
+          }
+
+          emailController.text = userData['email']?.toString() ?? '';
+        });
+
+        print('Phone controller text: ${phoneController.text}'); // Debug
+        print('Email controller text: ${emailController.text}'); // Debug
+      } else {
+        print('No user data found in SharedPreferences');
+      }
+    } catch (e) {
+      // Handle error silently
+      print('Error fetching user details: $e');
+    }
+  }
 
   @override
   void dispose() {
     meterNumberController.dispose();
     amountController.dispose();
     phoneController.dispose();
+    emailController.dispose();
     super.dispose();
   }
 
@@ -214,6 +259,15 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
                         decoration: _inputDecoration('Phone number'),
                         validator: (value) => value == null || value.isEmpty
                             ? 'Enter phone number'
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: _inputDecoration('Email address'),
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Enter email address'
                             : null,
                       ),
                     ],

@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 import 'summary_page.dart';
 
@@ -18,7 +19,7 @@ class SuccessPage extends StatelessWidget {
   final String meterType;
   final String customerName;
 
-  const SuccessPage({
+  SuccessPage({
     super.key,
     required this.token,
     required this.units,
@@ -30,13 +31,14 @@ class SuccessPage extends StatelessWidget {
     required this.customerName,
   });
 
+  final FlutterTts flutterTts = FlutterTts();
+
   // ✅ Generate and share PDF receipt
   Future<void> _generateAndShareReceipt() async {
     final pdf = pw.Document();
 
-    const brandColor = PdfColor.fromInt(0xFF00C950); // ✅ updated brand green
+    const brandColor = PdfColor.fromInt(0xFF00C950);
 
-    // Load logo from assets
     final logo = pw.MemoryImage(
       (await rootBundle.load("assets/images/small_logo.png"))
           .buffer
@@ -50,7 +52,6 @@ class SuccessPage extends StatelessWidget {
         build: (pw.Context context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: [
-            // ✅ Logo & Title
             pw.Center(child: pw.Image(logo, height: 70)),
             pw.SizedBox(height: 12),
             pw.Center(
@@ -64,8 +65,6 @@ class SuccessPage extends StatelessWidget {
               ),
             ),
             pw.SizedBox(height: 24),
-
-            // ✅ Table with transaction details
             pw.Table(
               border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
               columnWidths: {
@@ -90,10 +89,7 @@ class SuccessPage extends StatelessWidget {
                 ),
               ],
             ),
-
             pw.SizedBox(height: 40),
-
-            // ✅ Thank you note
             pw.Center(
               child: pw.Text(
                 "Thank you for your payment!",
@@ -104,10 +100,7 @@ class SuccessPage extends StatelessWidget {
                 ),
               ),
             ),
-
             pw.Spacer(),
-
-            // ✅ Footer contact info
             pw.Divider(),
             pw.Center(
               child: pw.Text(
@@ -150,9 +143,19 @@ class SuccessPage extends StatelessWidget {
     );
   }
 
+  // ✅ Speak token digit by digit
+  Future<void> _speakToken(String token) async {
+    await flutterTts.setLanguage("en-NG");
+    await flutterTts.setPitch(1.0);
+    await flutterTts.setSpeechRate(0.4);
+
+    final digits = token.split('').join(' ');
+    await flutterTts.speak("Your electricity token is $digits");
+  }
+
   @override
   Widget build(BuildContext context) {
-    const brandColor = Color(0xFF00C950); // ✅ updated brand green
+    const brandColor = Color(0xFF00C950);
 
     return Scaffold(
       body: SafeArea(
@@ -174,16 +177,13 @@ class SuccessPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
             const Icon(Icons.check_circle, color: brandColor, size: 100),
             const SizedBox(height: 10),
-
             const Text(
               "Successful",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 10),
-
             GestureDetector(
               onLongPress: () {
                 Clipboard.setData(ClipboardData(text: amount));
@@ -198,11 +198,9 @@ class SuccessPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 5),
-
             Text("$units units",
                 style: const TextStyle(fontSize: 16, color: Colors.grey)),
             const SizedBox(height: 20),
-
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
               padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
@@ -232,11 +230,15 @@ class SuccessPage extends StatelessWidget {
                       );
                     },
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.volume_up,
+                        size: 22, color: brandColor),
+                    onPressed: () => _speakToken(token),
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 30),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -267,14 +269,11 @@ class SuccessPage extends StatelessWidget {
                 ],
               ),
             ),
-
             const Spacer(),
-
-            // ✅ Footer on screen
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Text(
-                "Need help? Call us at: +234-800-123-4567",
+                "Need help? Call us at: +234 913 001 3114",
                 style: TextStyle(color: Colors.grey[700], fontSize: 12),
                 textAlign: TextAlign.center,
               ),
@@ -286,7 +285,7 @@ class SuccessPage extends StatelessWidget {
   }
 
   Widget _actionButton(IconData icon, String label, VoidCallback onTap) {
-    const brandColor = Color(0xFF00C950); // ✅ updated brand green
+    const brandColor = Color(0xFF00C950);
     return Column(
       children: [
         InkWell(

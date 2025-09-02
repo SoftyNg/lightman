@@ -4,20 +4,22 @@ import 'dashboard_screen.dart';
 import 'buy_power_screen.dart';
 
 class FailedPage extends StatelessWidget {
-  final String amount; // ✅ total paid (no more split into units + total)
+  final String amount; // ✅ total paid
+  final String? message; // ✅ optional error message from backend
 
   const FailedPage({
     super.key,
     required this.amount,
+    this.message,
   });
 
   // ✅ WhatsApp support link
   Future<void> _openWhatsApp() async {
     const supportNumber =
         "2349130013114"; // TODO: Replace with your WhatsApp number
-    final message = Uri.encodeComponent(
+    final text = Uri.encodeComponent(
         "Hello, I had a failed payment of ₦$amount. Please assist.");
-    final url = Uri.parse("https://wa.me/$supportNumber?text=$message");
+    final url = Uri.parse("https://wa.me/$supportNumber?text=$text");
 
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -83,7 +85,7 @@ class FailedPage extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            // ✅ Only show total paid now
+            // ✅ Show total paid
             Text(
               "₦$amount",
               style: const TextStyle(
@@ -91,6 +93,19 @@ class FailedPage extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
+
+            // ✅ Show backend error message if available
+            if (message != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                message!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black54,
+                ),
+              ),
+            ],
 
             const SizedBox(height: 40),
 
@@ -142,7 +157,7 @@ class FailedPage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 15),
                   ),
                   icon: Image.asset(
-                    "assets/images/whatsapp.png", // ✅ Make sure this exists
+                    "assets/images/whatsapp.png", // ✅ Ensure asset exists
                     height: 24,
                     width: 24,
                   ),

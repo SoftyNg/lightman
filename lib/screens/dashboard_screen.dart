@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lightman/constants/app_colors.dart';
 import 'package:lightman/screens/fund_wallet_screen.dart'; // <-- for webview
-import 'package:lightman/screens/buy_power_screen.dart'; // Replace with actual path
-import 'package:lightman/screens/profile_screen.dart'; // Adjust path if needed
+import 'package:lightman/screens/buy_power_screen.dart';
+import 'package:lightman/screens/profile_screen.dart';
+import 'package:lightman/services/transactions.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -14,8 +17,47 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _showBalance = true;
-
   int _selectedIndex = 0;
+
+  String firstName = "";
+  String lastName = "";
+  int userId = 0;
+  double walletBalance = 0.0;
+  bool isLoading = true;
+  final TransactionService _transactionService = TransactionService();
+
+  @override
+  void initState() {
+    super.initState();
+    _getUserDetails();
+    //_getWalletBalance();
+  }
+
+  Future<void> _getUserDetails() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userDataString = prefs.getString('user_data');
+
+      if (userDataString != null) {
+        final userData = jsonDecode(userDataString);
+        setState(() {
+          firstName = userData['first_name'] ?? "";
+          lastName = userData['last_name'] ?? "";
+          userId = (userData['id']?.toString() ?? "") as int;
+          isLoading = false;
+        });
+      } else {
+        // Fallback: No stored user data found
+        setState(() {
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
@@ -38,11 +80,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (hour < 12) return 'Good Morning';
     if (hour < 17) return 'Good Afternoon';
     return 'Good Evening';
-  }
-
-  Future<String> _getUserName() async {
-    final user = FirebaseAuth.instance.currentUser;
-    return user?.displayName ?? 'User';
   }
 
   void _showMenu() {
@@ -113,26 +150,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: const TextStyle(color: Colors.grey, fontSize: 14),
             ),
             const SizedBox(height: 4),
-            FutureBuilder<String>(
-              future: _getUserName(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Text('Loading...',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold));
-                } else if (snapshot.hasError || !snapshot.hasData) {
-                  return const Text('User',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold));
-                } else {
-                  return Text(
-                    snapshot.data!,
+            isLoading
+                ? const Text(
+                    'Loading...',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  )
+                : Text(
+                    "$firstName $lastName",
                     style: const TextStyle(
                         fontSize: 20, fontWeight: FontWeight.bold),
-                  );
-                }
-              },
-            ),
+                  ),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(20),
@@ -150,7 +177,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _showBalance ? '₦26,700' : '••••••',
+                        _showBalance
+                            ? '₦${walletBalance.toStringAsFixed(0)}'
+                            : '••••••',
                         style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -180,7 +209,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               MaterialPageRoute(
                                 builder: (context) => FundWalletScreen(
                                   paymentUrl:
-                                      "https://paystack.shop/pay/0va83vev7e", // ← replace with dynamic session link
+                                      "https://paystack.shop/pay/0va83vev7e", // keep same
                                 ),
                               ),
                             );

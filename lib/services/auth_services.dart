@@ -1,77 +1,179 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/register_model.dart';
 
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // ✅ Change this to your backend API base URL
+  final String baseUrl = "https://realestatearena.com.ng";
 
-  // ✅ Register user with email and password
-  Future<UserCredential> registerWithEmail(RegisterModel user) async {
-    try {
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: user.email,
-        password: user.password,
-      );
+  // SharedPreferences keys
+  static const String _userDataKey = 'user_data';
+  static const String _isLoggedInKey = 'is_logged_in';
+  static const String _userTokenKey = 'user_token';
 
-      await userCredential.user
-          ?.updateDisplayName('${user.firstName} ${user.lastName}');
+  // ✅ Register user
+  Future<void> registerWithEmail(RegisterModel user) async {
+    final url = Uri.parse("$baseUrl/register.php");
 
-      await userCredential.user?.sendEmailVerification();
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "first_name": user.firstName,
+        "last_name": user.lastName,
+        "email": user.email,
+        "phone": user.phone,
+        "password": user.password,
+      }),
+    );
 
-      return userCredential;
-    } on FirebaseAuthException catch (e) {
-      throw Exception(e.message ?? 'Registration failed');
-    } catch (e) {
-      throw Exception('An error occurred during registration');
+    final data = jsonDecode(response.body);
+
+    if (data['status'] != 'success') {
+      throw Exception(data['message']);
     }
   }
 
-  // ✅ Login user if email is verified
-  Future<UserCredential> loginWithEmail(String email, String password) async {
-    try {
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+  // ✅ Login user (with email verification check in PHP) + SharedPreferences storage
+  Future<Map<String, dynamic>> loginWithEmail(
+      String email, String password) async {
+    final url = Uri.parse("$baseUrl/login.php");
 
-      await userCredential.user?.reload();
-      final isVerified = userCredential.user?.emailVerified ?? false;
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "email": email,
+        "password": password,
+      }),
+    );
 
-      if (!isVerified) {
-        await _auth.signOut();
-        throw Exception('Your email is not verified. Please check your inbox.');
-      }
+    final data = jsonDecode(response.body);
 
-      return userCredential;
-    } on FirebaseAuthException catch (e) {
-      throw Exception(e.message ?? 'Login failed');
-    } catch (e) {
-      throw Exception('An error occurred during login');
+    if (data['status'] != 'success') {
+      throw Exception(data['message']);
+    }
+
+    // ✅ Store user details in SharedPreferences
+    await _saveUserToPreferences(data['user']);
+
+    // Return user details
+    return data['user'];
+  }
+
+  // ✅ Save user data to SharedPreferences
+  Future<void> _saveUserToPreferences(Map<String, dynamic> userData) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Store user data as JSON string
+    await prefs.setString(_userDataKey, jsonEncode(userData));
+
+    // Store login status
+    await prefs.setBool(_isLoggedInKey, true);
+
+    // Store token if it exists in user data
+    if (userData.containsKey('token')) {
+      await prefs.setString(_userTokenKey, userData['token']);
     }
   }
 
-  // ✅ Password reset
+  // ✅ Get stored user data from SharedPreferences
+  Future<Map<String, dynamic>?> getStoredUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userDataString = prefs.getString(_userDataKey);
+
+    if (userDataString != null) {
+      return jsonDecode(userDataString);
+    }
+
+    return null;
+  }
+
+  // ✅ Check if user is logged in
+  Future<bool> isLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_isLoggedInKey) ?? false;
+  }
+
+  // ✅ Get stored token
+  Future<String?> getStoredToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userTokenKey);
+  }
+
+  // ✅ Update user data in SharedPreferences
+  Future<void> updateStoredUserData(Map<String, dynamic> userData) async {
+    await _saveUserToPreferences(userData);
+  }
+
+  // ✅ Forgot password (PHP endpoint should send reset link/email)
   Future<void> sendPasswordResetEmail(String email) async {
-    try {
-      await _auth.sendPasswordResetEmail(email: email);
-    } on FirebaseAuthException catch (e) {
-      throw Exception(e.message ?? 'Failed to send reset email');
-    } catch (e) {
-      throw Exception('An error occurred during password reset');
+    final url = Uri.parse("$baseUrl/forgot_password.php");
+
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"email": email}),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (data['status'] != 'success') {
+      throw Exception(data['message']);
     }
   }
 
-  // ✅ Sign out
+  // ✅ Sign out (Clear SharedPreferences)
   Future<void> signOut() async {
-    await _auth.signOut();
+    final prefs = await SharedPreferences.getInstance();
+
+    // Clear all stored user data
+    await prefs.remove(_userDataKey);
+    await prefs.remove(_isLoggedInKey);
+    await prefs.remove(_userTokenKey);
+
+    // Or you can clear all preferences if needed:
+    // await prefs.clear();
   }
 
-  // ✅ Get current user
-  User? get currentUser => _auth.currentUser;
+  // ✅ Fetch user details using token (from users table in PHP backend)
+  Future<Map<String, dynamic>> getUserDetails(String token) async {
+    final url = Uri.parse("$baseUrl/get_user.php");
 
-  // ✅ Check if email is verified
-  Future<bool> isEmailVerified() async {
-    final user = _auth.currentUser;
-    await user?.reload();
-    return user?.emailVerified ?? false;
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"token": token}),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (data['status'] != 'success') {
+      throw Exception(data['message']);
+    }
+
+    // ✅ Update stored user data with fresh data from server
+    await _saveUserToPreferences(data['user']);
+
+    return data['user'];
+  }
+
+  // ✅ Auto-login check (call this when app starts)
+  Future<Map<String, dynamic>?> checkAutoLogin() async {
+    if (await isLoggedIn()) {
+      final token = await getStoredToken();
+      if (token != null) {
+        try {
+          // Validate token with server and get fresh user data
+          return await getUserDetails(token);
+        } catch (e) {
+          // Token is invalid, clear stored data
+          await signOut();
+          return null;
+        }
+      }
+    }
+    return null;
   }
 }

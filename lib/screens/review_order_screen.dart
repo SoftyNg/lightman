@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'paystack_payment_screen.dart';
 import 'summary_page.dart';
 
@@ -37,13 +38,38 @@ class ReviewOrderScreen extends StatefulWidget {
 
 class _ReviewOrderScreenState extends State<ReviewOrderScreen> {
   late TextEditingController phoneController;
+  String userEmail = "";
 
   @override
   void initState() {
     super.initState();
-    final user = FirebaseAuth.instance.currentUser;
-    phoneController =
-        TextEditingController(text: user?.phoneNumber ?? widget.phone);
+    phoneController = TextEditingController(text: widget.phone);
+    _getUserDetails();
+  }
+
+  Future<void> _getUserDetails() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userDataString = prefs.getString('user_data');
+
+      if (userDataString != null) {
+        final userData = jsonDecode(userDataString);
+
+        setState(() {
+          userEmail = userData['email']?.toString() ?? '';
+
+          // Update phone if it's empty or if we have a better value from stored data
+          if (phoneController.text.isEmpty) {
+            var phoneValue = userData['phone'];
+            if (phoneValue != null) {
+              phoneController.text = phoneValue.toString().replaceAll('.0', '');
+            }
+          }
+        });
+      }
+    } catch (e) {
+      print('Error fetching user details: $e');
+    }
   }
 
   @override
@@ -53,10 +79,7 @@ class _ReviewOrderScreenState extends State<ReviewOrderScreen> {
   }
 
   Future<void> _onPayPressed() async {
-    final user = FirebaseAuth.instance.currentUser;
-    final email = user?.email ?? "";
-
-    if (email.isEmpty) {
+    if (userEmail.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("No logged in user found"),
@@ -78,7 +101,7 @@ class _ReviewOrderScreenState extends State<ReviewOrderScreen> {
           amount: total, // ✅ Paystack charge
           unitsAmount: widget.electricityAmount, // ✅ send to PHP for VTpass
           phone: enteredPhone,
-          email: email,
+          email: userEmail,
         ),
       ),
     );
