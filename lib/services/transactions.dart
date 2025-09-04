@@ -58,8 +58,8 @@ class TransactionService {
   }
 
   /// Fetch transaction history
-  Future<List<dynamic>> getTransactions(int userId) async {
-    final url = Uri.parse("$baseUrl/transactions/history.php?user_id=$userId");
+  Future<List<dynamic>> getTransactions(String email) async {
+    final url = Uri.parse("$baseUrl/history.php?email=$email");
 
     final response = await http.get(url);
 
@@ -90,6 +90,34 @@ class TransactionService {
       }
     } else {
       throw Exception("Failed to fetch wallet balance");
+    }
+  }
+
+// TransactionService.dart
+
+  /// ✅ Calculate total amount spent for a user
+  Future<Map<String, dynamic>> getTotalSpent(String email) async {
+    final url = Uri.parse("$baseUrl/total_spent.php?email=$email");
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body); // returns Map
+    } else {
+      throw Exception("Failed to fetch total spent");
+    }
+  }
+
+  /// ✅ Calculate total units purchased for a user
+  Future<Map<String, dynamic>> getTotalUnits(String email) async {
+    final url = Uri.parse("$baseUrl/total_units.php?email=$email");
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body); // returns Map
+    } else {
+      throw Exception("Failed to fetch total units");
     }
   }
 }

@@ -62,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen>
                   position: _animation,
                   child: Image.asset(
                     'assets/images/woman.png',
-                    height: 200,
+                    height: 340, //adjust width:300 accordingly
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -78,14 +78,14 @@ class _HomeScreenState extends State<HomeScreen>
                         'Instant power\npayments, without stress',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: 32,
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
                       ),
                       SizedBox(height: 12),
                       Text(
-                        'Light Man is trusted across Nigeria to pay power bills in seconds, get instant tokens anywhere, anytime.',
+                        'LightmanNG is trusted across Nigeria to pay power bills in seconds, get instant tokens anywhere, anytime.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,

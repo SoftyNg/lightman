@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lightman/constants/app_colors.dart';
-import 'package:lightman/screens/fund_wallet_screen.dart'; // <-- for webview
+import 'package:lightman/screens/fund_wallet_screen.dart';
 import 'package:lightman/screens/buy_power_screen.dart';
 import 'package:lightman/screens/profile_screen.dart';
 import 'package:lightman/services/transactions.dart';
+import 'package:intl/intl.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,16 +21,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   String firstName = "";
   String lastName = "";
+  String email = "";
   int userId = 0;
   double walletBalance = 0.0;
   bool isLoading = true;
+  List<dynamic> transactions = [];
   final TransactionService _transactionService = TransactionService();
 
   @override
   void initState() {
     super.initState();
     _getUserDetails();
-    //_getWalletBalance();
   }
 
   Future<void> _getUserDetails() async {
@@ -43,35 +44,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           firstName = userData['first_name'] ?? "";
           lastName = userData['last_name'] ?? "";
-          userId = (userData['id']?.toString() ?? "") as int;
+          email = userData['email'] ?? "";
+          userId = int.tryParse(userData['id']?.toString() ?? "0") ?? 0;
           isLoading = false;
         });
+
+        if (userId > 0 && email.isNotEmpty) {
+          _getWalletBalance();
+          _getTransactions();
+        }
       } else {
-        // Fallback: No stored user data found
-        setState(() {
-          isLoading = false;
-        });
+        setState(() => isLoading = false);
       }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
     }
+  }
+
+  Future<void> _getWalletBalance() async {
+    try {
+      if (userId > 0) {
+        final balance = await _transactionService.getWalletBalance(userId);
+        setState(() => walletBalance = balance);
+      }
+    } catch (e) {}
+  }
+
+  Future<void> _getTransactions() async {
+    try {
+      final txns = await _transactionService.getTransactions(email);
+      setState(() => transactions = txns);
+    } catch (e) {}
   }
 
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
 
     if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const BuyPowerScreen()),
-      );
+      Navigator.push(context,
+          MaterialPageRoute(builder: (context) => const BuyPowerScreen()));
     } else if (index == 2) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const ProfileScreen()),
-      );
+      Navigator.push(context,
+          MaterialPageRoute(builder: (context) => const ProfileScreen()));
     }
   }
 
@@ -80,22 +94,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (hour < 12) return 'Good Morning';
     if (hour < 17) return 'Good Afternoon';
     return 'Good Evening';
-  }
-
-  void _showMenu() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => const Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(leading: Icon(Icons.settings), title: Text('Settings')),
-          ListTile(leading: Icon(Icons.help_outline), title: Text('Help')),
-          ListTile(leading: Icon(Icons.logout), title: Text('Logout')),
-        ],
-      ),
-    );
   }
 
   void _showNotifications() {
@@ -127,10 +125,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.black),
-          onPressed: _showMenu,
-        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none_outlined,
@@ -209,17 +203,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               MaterialPageRoute(
                                 builder: (context) => FundWalletScreen(
                                   paymentUrl:
-                                      "https://paystack.shop/pay/0va83vev7e", // keep same
+                                      "https://paystack.shop/pay/0va83vev7e",
                                 ),
                               ),
                             );
                           },
-                          icon: const Icon(Icons.account_balance_wallet),
-                          label: const Text('Fund wallet'),
+                          icon: const Icon(
+                            Icons.account_balance_wallet,
+                            color: Color(0xFF013D32), // Deep green
+                          ),
+                          label: const Text(
+                            'Fund wallet',
+                            style: TextStyle(
+                              color: Color(0xFF013D32), // Deep green
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
+                            backgroundColor:
+                                Color(0xFFF1F2F6), // Light gray background
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                              borderRadius:
+                                  BorderRadius.circular(30), // Pill shape
+                            ),
+                            elevation: 0, // Flat look
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                         ),
                       ),
@@ -234,12 +243,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             );
                           },
-                          icon: const Icon(Icons.flash_on),
-                          label: const Text('Buy electricity'),
+                          icon: const Icon(Icons.flash_on, color: Colors.white),
+                          label: const Text(
+                            'Buy electricity',
+                            style: TextStyle(color: Colors.white),
+                          ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryGreen,
+                            backgroundColor:
+                                AppColors.primaryGreen, // green background
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                              borderRadius:
+                                  BorderRadius.circular(30), // pill-shaped
+                            ),
                           ),
                         ),
                       ),
@@ -249,47 +264,97 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             const SizedBox(height: 16),
+
+            // ✅ Updated Spent & Units using correct types
             Row(
               children: [
                 Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Column(
-                      children: [
-                        Icon(Icons.money_off, color: Colors.red),
-                        SizedBox(height: 8),
-                        Text('Spent'),
-                        Text('₦45,700',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
+                  child: FutureBuilder<Map<String, dynamic>>(
+                    future: _transactionService
+                        .getTotalSpent(email)
+                        .then((res) => res),
+                    builder: (context, snapshot) {
+                      double totalSpentAmount = 0.0;
+                      if (snapshot.hasData) {
+                        totalSpentAmount = double.tryParse(
+                                snapshot.data!['total'].toString()) ??
+                            0.0;
+                      }
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.money_off, color: Colors.red),
+                            const SizedBox(height: 8),
+                            const Text('Spent'),
+                            Text(
+                              NumberFormat.currency(
+                                      locale: 'en_NG', symbol: '₦')
+                                  .format(totalSpentAmount),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Column(
-                      children: [
-                        Icon(Icons.bolt, color: Colors.green),
-                        SizedBox(height: 8),
-                        Text('Units'),
-                        Text('800',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
+                  child: FutureBuilder<Map<String, dynamic>>(
+                    future: _transactionService.getTotalUnits(email),
+                    builder: (context, snapshot) {
+                      double totalUnitsPurchased = 0.0;
+
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (snapshot.hasError) {
+                        return const Text("Error loading units",
+                            style: TextStyle(color: Colors.red));
+                      }
+
+                      if (snapshot.hasData) {
+                        final data = snapshot.data!;
+                        if (data['status'] == true && data['total'] != null) {
+                          totalUnitsPurchased =
+                              double.tryParse(data['total'].toString()) ?? 0.0;
+                        }
+                        print("🔎 Units API Response: $data"); // Debug log
+                      }
+
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.bolt, color: Colors.green),
+                            const SizedBox(height: 8),
+                            const Text('Units'),
+                            Text(
+                              '${totalUnitsPurchased.toStringAsFixed(1)}Kwh',
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
             ),
+
             const SizedBox(height: 24),
             const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -302,12 +367,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            _transactionTile('AEDC', '14273567892', 'Abuja',
-                '72cty937293726292012', '₦40,700', '12 jan 2025'),
-            _transactionTile('EKEDC', '14273567893', 'Lagos',
-                '82cty937293726292013', '₦45,500', '15 jan 2025'),
-            _transactionTile('AEDC', '14273567894', 'Abuja',
-                '92cty937293726292014', '₦38,250', '20 jan 2025'),
+
+            // ✅ Transactions list with null-safe handling
+            if (transactions.isEmpty)
+              Column(
+                children: [
+                  const SizedBox(height: 40),
+                  Center(
+                    child: Column(
+                      children: [
+                        Image.asset(
+                          'assets/images/no_transactions.png', // Make sure this file exists in your assets folder
+                          width: 60,
+                          height: 60,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          "No transactions yet",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black54,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          "Once you start paying your electricity bills,\nyour recent activity will show up here",
+                          style: TextStyle(color: Colors.grey),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              )
+            else
+              Column(
+                children: transactions.map((txn) {
+                  if (txn == null) return const SizedBox.shrink();
+
+                  String createdAt = txn['created_at'] ?? "";
+                  String formattedDate = "";
+                  if (createdAt.isNotEmpty) {
+                    try {
+                      DateTime parsedDate = DateTime.parse(createdAt);
+                      formattedDate =
+                          DateFormat('dd MMM yyyy').format(parsedDate);
+                    } catch (e) {
+                      formattedDate = createdAt;
+                    }
+                  }
+
+                  return _transactionTile(
+                    txn['disco_name'] ?? "Abuja",
+                    txn['token'] ?? "",
+                    "", // location not in API
+                    txn['transaction_id']?.toString() ?? "N/A",
+                    "₦${txn['total_amount'] ?? 0}",
+                    formattedDate,
+                  );
+                }).toList(),
+              ),
+
             const SizedBox(height: 24),
           ],
         ),
