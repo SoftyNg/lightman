@@ -3,6 +3,7 @@ import 'package:lightman/constants/app_colors.dart';
 import 'package:lightman/widgets/app_logo_header.dart';
 import 'forgot_password_phone_screen.dart';
 import 'package:lightman/services/auth_services.dart';
+import 'package:lightman/screens/update_password_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -23,7 +24,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     try {
       await AuthService().sendPasswordResetEmail(_emailController.text.trim());
-      _showSnackBar('📧 Password reset email sent! Check your inbox.');
+
+      // ✅ Navigate to UpdatePasswordScreen immediately
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => UpdatePasswordScreen(
+            email: _emailController.text.trim(),
+            token: "", // token will still come via deep link
+          ),
+        ),
+      );
+
+      // ✅ Show success message AFTER navigation
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("📧 Password reset email sent! Check your inbox."),
+            backgroundColor: Colors.green,
+          ),
+        );
+      });
     } catch (e) {
       _showSnackBar(e.toString(), isError: true);
     } finally {

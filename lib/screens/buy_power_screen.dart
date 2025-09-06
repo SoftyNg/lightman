@@ -46,32 +46,18 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
       final prefs = await SharedPreferences.getInstance();
       final userDataString = prefs.getString('user_data');
 
-      print('Raw user data string: $userDataString'); // Debug
-
       if (userDataString != null) {
         final userData = jsonDecode(userDataString);
 
-        print('Parsed user data: $userData'); // Debug
-        print('Phone field: ${userData['phone']}'); // Debug
-        print('Email field: ${userData['email']}'); // Debug
-
         setState(() {
-          // Handle phone number properly - convert from number to string
           var phoneValue = userData['phone'];
           if (phoneValue != null) {
             phoneController.text = phoneValue.toString().replaceAll('.0', '');
           }
-
           emailController.text = userData['email']?.toString() ?? '';
         });
-
-        print('Phone controller text: ${phoneController.text}'); // Debug
-        print('Email controller text: ${emailController.text}'); // Debug
-      } else {
-        print('No user data found in SharedPreferences');
       }
     } catch (e) {
-      // Handle error silently
       print('Error fetching user details: $e');
     }
   }
@@ -297,25 +283,6 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
             ],
           ),
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1,
-        selectedItemColor: const Color(0xFF00C853),
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.flash_on),
-            label: 'Buy',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }

@@ -132,23 +132,23 @@ class AuthService {
     await prefs.remove(_userDataKey);
     await prefs.remove(_isLoggedInKey);
     await prefs.remove(_userTokenKey);
-
-    // Or you can clear all preferences if needed:
-    // await prefs.clear();
   }
 
   // ✅ Fetch user details using token (from users table in PHP backend)
-  Future<Map<String, dynamic>> getUserDetails(String token) async {
-    final url = Uri.parse("$baseUrl/get_user.php");
+  Future<Map<String, dynamic>> getUserDetails() async {
+    final token = await getStoredToken();
+    if (token == null) throw Exception("Token missing");
 
+    final url = Uri.parse("$baseUrl/get_user.php");
     final response = await http.post(
       url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"token": token}),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
     );
 
     final data = jsonDecode(response.body);
-
     if (data['status'] != 'success') {
       throw Exception(data['message']);
     }
@@ -162,18 +162,60 @@ class AuthService {
   // ✅ Auto-login check (call this when app starts)
   Future<Map<String, dynamic>?> checkAutoLogin() async {
     if (await isLoggedIn()) {
-      final token = await getStoredToken();
-      if (token != null) {
-        try {
-          // Validate token with server and get fresh user data
-          return await getUserDetails(token);
-        } catch (e) {
-          // Token is invalid, clear stored data
-          await signOut();
-          return null;
-        }
+      try {
+        return await getUserDetails();
+      } catch (e) {
+        await signOut();
+        return null;
       }
     }
     return null;
+  }
+
+  // ✅ Reset password with token (called from UpdatePasswordScreen)
+  Future<void> resetPassword(
+      String email, String token, String newPassword) async {
+    final url = Uri.parse("$baseUrl/reset_password.php");
+
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "email": email,
+        "token": token,
+        "new_password": newPassword,
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (data['status'] != 'success') {
+      throw Exception(data['message']);
+    }
+  }
+
+  // ✅ Update profile
+  Future<void> updateProfile(Map<String, String> updatedData) async {
+    final token = await getStoredToken();
+    if (token == null) throw Exception("Token missing");
+
+    final url = Uri.parse("$baseUrl/update_profile.php");
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode(updatedData),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (data['status'] != 'success') {
+      throw Exception(data['message']);
+    }
+
+    // Update stored user data
+    await _saveUserToPreferences(data['user']);
   }
 }

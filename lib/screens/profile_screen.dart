@@ -1,6 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/auth_services.dart';
+import 'profile_settings_screen.dart'; // ✅ Import your settings screen
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -10,45 +12,46 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String userName = '';
+  bool _isLoading = true;
+  String firstName = '';
+  String lastName = '';
+  String email = '';
   String phoneNumber = '';
 
   @override
   void initState() {
     super.initState();
-    fetchUserDetails();
+    _getUserDetails();
   }
 
-  Future<void> fetchUserDetails() async {
-    final user = FirebaseAuth.instance.currentUser;
+  Future<void> _getUserDetails() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userDataString = prefs.getString('user_data');
 
-    if (user != null) {
-      try {
-        final snapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
+      if (userDataString != null) {
+        final userData = jsonDecode(userDataString);
 
-        if (snapshot.exists) {
-          final data = snapshot.data();
-          setState(() {
-            userName = data?['name'] ?? user.displayName ?? 'User';
-            phoneNumber = data?['phone'] ?? user.phoneNumber ?? '';
-          });
-        } else {
-          setState(() {
-            userName = user.displayName ?? 'User';
-            phoneNumber = user.phoneNumber ?? '';
-          });
-        }
-      } catch (e) {
-        print('Error fetching user details: $e');
         setState(() {
-          userName = user.displayName ?? 'User';
-          phoneNumber = user.phoneNumber ?? '';
+          firstName = userData['first_name'] ?? '';
+          lastName = userData['last_name'] ?? '';
+          email = userData['email'] ?? '';
+          phoneNumber = userData['phone'] ?? '';
+          _isLoading = false;
         });
+      } else {
+        setState(() => _isLoading = false);
       }
+    } catch (e) {
+      debugPrint('Error fetching user details: $e');
+      setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _logout() async {
+    await AuthService().signOut();
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/login');
   }
 
   Widget buildMenuItem({
@@ -74,78 +77,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7FA),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            const Text(
-              "Profile",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  const Text(
+                    "Profile",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
 
-            // Profile Box
-            Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              child: ListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE7F8EC),
-                  child: Icon(Icons.person, color: Colors.green),
-                ),
-                title: Text(
-                  userName.isNotEmpty ? userName : 'Loading...',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(
-                    phoneNumber.isNotEmpty ? phoneNumber : 'Fetching phone...'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  // ✅ Profile Box with navigation to settings
+                  Card(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      leading: const CircleAvatar(
+                        backgroundColor: Color(0xFFE7F8EC),
+                        child: Icon(Icons.person, color: Colors.green),
+                      ),
+                      title: Text(
+                        firstName.isNotEmpty || lastName.isNotEmpty
+                            ? '$firstName $lastName'
+                            : 'User',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                          phoneNumber.isNotEmpty ? phoneNumber : 'No phone'),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+
+                      // ✅ Navigate to ProfileSettingsScreen on tap
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ProfileSettingsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                  const Text(
+                    "General",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+
+                  buildMenuItem(icon: Icons.save, title: "Saved meters"),
+                  buildMenuItem(
+                      icon: Icons.notifications_none, title: "Notifications"),
+                  buildMenuItem(
+                      icon: Icons.lock_outline, title: "Change Password"),
+                  buildMenuItem(
+                      icon: Icons.help_outline, title: "Help & Support"),
+                  buildMenuItem(
+                    icon: Icons.logout,
+                    title: "Logout",
+                    iconBgColor: Colors.red.shade50,
+                    iconColor: Colors.red,
+                    onTap: _logout,
+                  ),
+                ],
               ),
-            ),
-
-            const SizedBox(height: 24),
-            const Text(
-              "General",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-
-            buildMenuItem(icon: Icons.save, title: "Saved meters"),
-            buildMenuItem(
-                icon: Icons.notifications_none, title: "Notifications"),
-            buildMenuItem(icon: Icons.lock_outline, title: "Change Password"),
-            buildMenuItem(icon: Icons.help_outline, title: "Help & Support"),
-            buildMenuItem(
-              icon: Icons.logout,
-              title: "Logout",
-              iconBgColor: Colors.red.shade50,
-              iconColor: Colors.red,
-              onTap: () {
-                FirebaseAuth.instance.signOut();
-                Navigator.pushReplacementNamed(context, '/login');
-              },
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 2,
-        selectedItemColor: Colors.green,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard), label: 'Dashboard'),
-          BottomNavigationBarItem(icon: Icon(Icons.flash_on), label: 'Buy'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushReplacementNamed(context, '/dashboard');
-          } else if (index == 1) {
-            Navigator.pushReplacementNamed(context, '/buy');
-          }
-        },
       ),
     );
   }
