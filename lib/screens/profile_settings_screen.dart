@@ -54,23 +54,20 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       if (userDataString == null) throw Exception("User not logged in");
 
       final userData = jsonDecode(userDataString);
-      final token = userData['token'];
-      if (token == null) throw Exception("Token missing");
+      final email = userData['email'];
+      if (email == null) throw Exception("Email missing");
 
       final updatedData = {
         "first_name": firstNameController.text.trim(),
         "last_name": lastNameController.text.trim(),
         "phone": phoneController.text.trim(),
-        "email": emailController.text.trim(),
+        "email": emailController.text.trim(), // send email for identification
       };
 
       final url = Uri.parse("${_authService.baseUrl}/update_profile.php");
       final response = await http.post(
         url,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
-        },
+        headers: {"Content-Type": "application/json"},
         body: jsonEncode(updatedData),
       );
 
