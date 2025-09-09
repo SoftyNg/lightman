@@ -93,8 +93,6 @@ class TransactionService {
     }
   }
 
-// TransactionService.dart
-
   /// ✅ Calculate total amount spent for a user
   Future<Map<String, dynamic>> getTotalSpent(String email) async {
     final url = Uri.parse("$baseUrl/total_spent.php?email=$email");
@@ -118,6 +116,19 @@ class TransactionService {
       return json.decode(response.body); // returns Map
     } else {
       throw Exception("Failed to fetch total units");
+    }
+  }
+
+  /// ✅ Fetch saved meters details for a user
+  Future<List<dynamic>> fetchMetersDetails(String email) async {
+    final url = Uri.parse("$baseUrl/fetch_meters_details.php?email=$email");
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body); // Expecting a list of meters
+    } else {
+      throw Exception("Failed to fetch meters details");
     }
   }
 }

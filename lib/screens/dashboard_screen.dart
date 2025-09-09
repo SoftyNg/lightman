@@ -7,6 +7,8 @@ import 'package:lightman/screens/buy_power_screen.dart';
 import 'package:lightman/screens/profile_screen.dart';
 import 'package:lightman/services/transactions.dart';
 import 'package:intl/intl.dart';
+import 'package:lightman/screens/transaction_history.dart';
+import 'package:lightman/screens/notifications_screen.dart'; // ✅ added import
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -93,28 +95,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return 'Good Evening';
   }
 
-  void _showNotifications() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => ListView(
-        padding: const EdgeInsets.all(16),
-        children: const [
-          ListTile(
-              leading: Icon(Icons.notifications),
-              title: Text("Your wallet was funded successfully.")),
-          ListTile(
-              leading: Icon(Icons.notifications),
-              title: Text("Your electricity purchase is complete.")),
-          ListTile(
-              leading: Icon(Icons.notifications),
-              title: Text("You earned a bonus unit!")),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,7 +106,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           IconButton(
             icon: const Icon(Icons.notifications_none_outlined,
                 color: Colors.black),
-            onPressed: _showNotifications,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsScreen(),
+                ),
+              );
+            },
           ),
           const SizedBox(width: 16),
         ],
@@ -179,14 +166,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 16),
           _spentAndUnits(),
           const SizedBox(height: 24),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Recent transactions',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              Text('See all', style: TextStyle(color: AppColors.primaryGreen))
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TransactionHistoryScreen(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'See all',
+                  style: TextStyle(
+                    color: AppColors.primaryGreen,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
