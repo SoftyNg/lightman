@@ -8,6 +8,7 @@ import 'package:pdf/pdf.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 import 'summary_page.dart';
+import 'package:lightman/services/transactions.dart'; // ✅ Import the TransactionService
 
 class SuccessPage extends StatelessWidget {
   final String token;
@@ -32,18 +33,14 @@ class SuccessPage extends StatelessWidget {
   });
 
   final FlutterTts flutterTts = FlutterTts();
+  final TransactionService _transactionService =
+      TransactionService(); // ✅ Instance
 
   // ✅ Generate and share PDF receipt
   Future<void> _generateAndShareReceipt() async {
     final pdf = pw.Document();
 
     const brandColor = PdfColor.fromInt(0xFF00C950);
-
-    final logo = pw.MemoryImage(
-      (await rootBundle.load("assets/images/small_logo.png"))
-          .buffer
-          .asUint8List(),
-    );
 
     pdf.addPage(
       pw.Page(
@@ -52,8 +49,6 @@ class SuccessPage extends StatelessWidget {
         build: (pw.Context context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: [
-            pw.Center(child: pw.Image(logo, height: 70)),
-            pw.SizedBox(height: 12),
             pw.Center(
               child: pw.Text(
                 "Electricity Payment Receipt",
@@ -151,6 +146,34 @@ class SuccessPage extends StatelessWidget {
 
     final digits = token.split('').join(' ');
     await flutterTts.speak("Your electricity token is $digits");
+  }
+
+  // ✅ Save meter function call
+  Future<void> _saveMeter(BuildContext context) async {
+    try {
+      final response = await _transactionService.saveMeter(
+        email: "user@example.com", // ✅ replace with actual user email
+        meterNumber: meterNumber,
+        meterType: meterType,
+        customerName: customerName,
+      );
+
+      final status = response['status'] ?? 'failed';
+      final message = response['message'] ?? 'An error occurred';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text(status == 'success' ? "Meter saved successfully!" : message),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to save meter: $e"),
+        ),
+      );
+    }
   }
 
   @override
@@ -264,7 +287,7 @@ class SuccessPage extends StatelessWidget {
                     );
                   }),
                   _actionButton(Icons.save_alt, "Save meter", () {
-                    // TODO: Implement save meter
+                    _saveMeter(context); // ✅ call the save meter function
                   }),
                 ],
               ),

@@ -126,9 +126,62 @@ class TransactionService {
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
-      return json.decode(response.body); // Expecting a list of meters
+      final data = json.decode(response.body);
+      return data["meters"] ?? []; // ✅ return only the meters list
     } else {
       throw Exception("Failed to fetch meters details");
+    }
+  }
+
+  /// ✅ Delete a saved meter for a user
+  Future<Map<String, dynamic>> deleteMeter({
+    required String email,
+    required String meterNumber,
+  }) async {
+    final url = Uri.parse("$baseUrl/delete_meter.php");
+
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: json.encode({
+        "email": email,
+        "meter_number": meterNumber,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(
+          response.body); // Expecting { "status": "success", "message": "..." }
+    } else {
+      throw Exception("Failed to delete meter");
+    }
+  }
+
+  /// ✅ Save a new meter for a user
+  Future<Map<String, dynamic>> saveMeter({
+    required String email,
+    required String meterNumber,
+    required String meterType,
+    String? customerName,
+  }) async {
+    final url = Uri.parse("$baseUrl/save_meter.php");
+
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: json.encode({
+        "email": email,
+        "meter_number": meterNumber,
+        "meter_type": meterType,
+        "customer_name": customerName ?? "",
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(
+          response.body); // Expecting { "status": "success", "message": "..." }
+    } else {
+      throw Exception("Failed to save meter");
     }
   }
 }

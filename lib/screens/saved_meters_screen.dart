@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lightman/services/transactions.dart';
-import 'package:lightman/screens/buy_power_screen.dart'; // ✅ added import
+import 'package:lightman/screens/buy_power_screen.dart';
+import 'package:lightman/screens/saved_meters_details.dart'; // ✅ correct import
 
 class SavedMetersScreen extends StatefulWidget {
   const SavedMetersScreen({super.key});
@@ -83,9 +84,10 @@ class _SavedMetersScreenState extends State<SavedMetersScreen> {
                   itemBuilder: (context, index) {
                     final meter = meters[index];
                     return _meterCard(
-                      name: meter['account_name'] ?? "Unknown",
+                      name: meter['customer_name'] ?? "Unknown",
                       meterNumber: meter['meter_number'] ?? "",
                       disco: meter['disco_name'] ?? "",
+                      meter: meter,
                     );
                   },
                 ),
@@ -96,6 +98,7 @@ class _SavedMetersScreenState extends State<SavedMetersScreen> {
     required String name,
     required String meterNumber,
     required String disco,
+    required Map<String, dynamic> meter,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -138,7 +141,19 @@ class _SavedMetersScreenState extends State<SavedMetersScreen> {
           ],
         ),
         onTap: () {
-          // Navigate to meter details page
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SavedMeterDetailsScreen(
+                customerName: meter['customer_name'] ?? "",
+                serviceAddress: meter['service_address'] ?? "",
+                meterNumber: meter['meter_number'] ?? "",
+                meterType: meter['meter_type'] ?? "",
+                displayName: meter['meter_name'] ?? "Meter",
+                //userEmail: email, // ✅ added here
+              ),
+            ),
+          );
         },
       ),
     );
@@ -151,7 +166,6 @@ class _SavedMetersScreenState extends State<SavedMetersScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon container
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -165,8 +179,6 @@ class _SavedMetersScreenState extends State<SavedMetersScreen> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Title
             const Text(
               "No saved meters yet",
               style: TextStyle(
@@ -176,8 +188,6 @@ class _SavedMetersScreenState extends State<SavedMetersScreen> {
               ),
             ),
             const SizedBox(height: 8),
-
-            // Subtitle
             const Text(
               "Save a meter after your next payment for\nfaster checkouts next time.",
               textAlign: TextAlign.center,
@@ -187,13 +197,11 @@ class _SavedMetersScreenState extends State<SavedMetersScreen> {
               ),
             ),
             const SizedBox(height: 24),
-
-            // Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00C853), // Green
+                  backgroundColor: const Color(0xFF00C853),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),

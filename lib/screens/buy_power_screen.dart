@@ -5,7 +5,18 @@ import '../services/vt_pass_services.dart';
 import 'review_order_screen.dart'; // ✅ ensure this matches your filename
 
 class BuyPowerScreen extends StatefulWidget {
-  const BuyPowerScreen({Key? key}) : super(key: key);
+  final String? prefilledMeterNumber;
+  final String? prefilledMeterType;
+  final String? prefilledEmail;
+  final String? prefilledPhone;
+
+  const BuyPowerScreen({
+    Key? key,
+    this.prefilledMeterNumber,
+    this.prefilledMeterType,
+    this.prefilledEmail,
+    this.prefilledPhone,
+  }) : super(key: key);
 
   @override
   State<BuyPowerScreen> createState() => _BuyPowerScreenState();
@@ -32,8 +43,8 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
 
   final meterNumberController = TextEditingController();
   final amountController = TextEditingController();
-  final phoneController = TextEditingController(); // ✅ phone number controller
-  final emailController = TextEditingController(); // ✅ email controller
+  final phoneController = TextEditingController();
+  final emailController = TextEditingController();
 
   @override
   void initState() {
@@ -56,6 +67,20 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
           }
           emailController.text = userData['email']?.toString() ?? '';
         });
+      }
+
+      // ✅ Override with prefilled values (from Buy again)
+      if (widget.prefilledMeterNumber != null) {
+        meterNumberController.text = widget.prefilledMeterNumber!;
+      }
+      if (widget.prefilledMeterType != null) {
+        meterType = widget.prefilledMeterType;
+      }
+      if (widget.prefilledEmail != null) {
+        emailController.text = widget.prefilledEmail!;
+      }
+      if (widget.prefilledPhone != null) {
+        phoneController.text = widget.prefilledPhone!;
       }
     } catch (e) {
       print('Error fetching user details: $e');
@@ -99,13 +124,21 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
 
       showLoading(false);
 
-      if (verifyResult['code'] != '000') {
+      // ✅ Ensure verification is truly successful
+      final isSuccess = verifyResult['code'] == '000' &&
+          (verifyResult['response_description']
+                  ?.toString()
+                  .toLowerCase()
+                  .contains('success') ??
+              false);
+
+      if (!isSuccess) {
         final errorMsg = verifyResult['message'] ??
             verifyResult['response_description'] ??
             verifyResult['content']?['error'] ??
             'Meter verification failed';
         showSnack('❌ $errorMsg');
-        return;
+        return; // ⛔ Stop here, don’t navigate
       }
 
       final customerName = verifyResult['content']?['Customer_Name'] ??
@@ -115,6 +148,7 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
           verifyResult['Address'] ??
           'Unknown Address';
 
+      // ✅ Navigate only on verified success
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -129,7 +163,7 @@ class _BuyPowerScreenState extends State<BuyPowerScreen> {
             serviceCharge: calculateServiceCharge(amount),
             meterName: customerName,
             address: customerAddress,
-            phone: phone, // ✅ pass phone forward
+            phone: phone,
           ),
         ),
       );
