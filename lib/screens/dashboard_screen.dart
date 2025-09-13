@@ -28,6 +28,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double walletBalance = 0.0;
   bool isLoading = true;
   List<dynamic> transactions = [];
+  List<dynamic> notifications = []; // ✅ Added notifications list
   final TransactionService _transactionService = TransactionService();
 
   @override
@@ -54,6 +55,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           await Future.wait([
             _getWalletBalance(),
             _getTransactions(),
+            _fetchNotifications(), // ✅ Fetch notifications
           ]);
         }
       }
@@ -84,6 +86,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  // ✅ Fetch notifications
+  Future<void> _fetchNotifications() async {
+    try {
+      final fetched = await _transactionService.fetchNotifications(email);
+      setState(() => notifications = fetched);
+    } catch (e) {
+      // handle error if needed
+    }
+  }
+
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
   }
@@ -102,21 +114,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_outlined,
-                color: Colors.black),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const NotificationsScreen(),
-                ),
-              );
-            },
-          ),
-          const SizedBox(width: 16),
-        ],
       ),
       body: IndexedStack(
         index: _selectedIndex,
@@ -146,21 +143,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _getGreeting(),
-            style: const TextStyle(color: Colors.grey, fontSize: 14),
-          ),
-          const SizedBox(height: 4),
-          isLoading
-              ? const Text(
-                  'Loading...',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                )
-              : Text(
-                  "$firstName $lastName",
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getGreeting(),
+                      style: const TextStyle(color: Colors.grey, fontSize: 14),
+                    ),
+                    const SizedBox(height: 4),
+                    isLoading
+                        ? const Text(
+                            'Loading...',
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold),
+                          )
+                        : Text(
+                            "$firstName $lastName",
+                            style: const TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                  ],
                 ),
+              ),
+              Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.notifications_none_outlined,
+                      color: Colors.black,
+                    ),
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const NotificationsScreen()),
+                      );
+                      _fetchNotifications(); // Refresh after returning
+                    },
+                  ),
+                  if (notifications.isNotEmpty)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Center(
+                          child: Text(
+                            notifications.length.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
           const SizedBox(height: 20),
           _walletCard(),
           const SizedBox(height: 16),

@@ -93,7 +93,7 @@ class TransactionService {
     }
   }
 
-  /// ✅ Calculate total amount spent for a user
+  /// Calculate total amount spent for a user
   Future<Map<String, dynamic>> getTotalSpent(String email) async {
     final url = Uri.parse("$baseUrl/total_spent.php?email=$email");
 
@@ -106,7 +106,7 @@ class TransactionService {
     }
   }
 
-  /// ✅ Calculate total units purchased for a user
+  /// Calculate total units purchased for a user
   Future<Map<String, dynamic>> getTotalUnits(String email) async {
     final url = Uri.parse("$baseUrl/total_units.php?email=$email");
 
@@ -119,7 +119,7 @@ class TransactionService {
     }
   }
 
-  /// ✅ Fetch saved meters details for a user
+  /// Fetch saved meters details for a user
   Future<List<dynamic>> fetchMetersDetails(String email) async {
     final url = Uri.parse("$baseUrl/fetch_meters_details.php?email=$email");
 
@@ -127,13 +127,13 @@ class TransactionService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return data["meters"] ?? []; // ✅ return only the meters list
+      return data["meters"] ?? []; // return only the meters list
     } else {
       throw Exception("Failed to fetch meters details");
     }
   }
 
-  /// ✅ Delete a saved meter for a user
+  /// Delete a saved meter for a user
   Future<Map<String, dynamic>> deleteMeter({
     required String email,
     required String meterNumber,
@@ -150,14 +150,14 @@ class TransactionService {
     );
 
     if (response.statusCode == 200) {
-      return json.decode(
-          response.body); // Expecting { "status": "success", "message": "..." }
+      return json
+          .decode(response.body); // { "status": "success", "message": "..." }
     } else {
       throw Exception("Failed to delete meter");
     }
   }
 
-  /// ✅ Save a new meter for a user
+  /// Save a new meter for a user
   Future<Map<String, dynamic>> saveMeter({
     required String email,
     required String meterNumber,
@@ -178,10 +178,43 @@ class TransactionService {
     );
 
     if (response.statusCode == 200) {
-      return json.decode(
-          response.body); // Expecting { "status": "success", "message": "..." }
+      return json
+          .decode(response.body); // { "status": "success", "message": "..." }
     } else {
       throw Exception("Failed to save meter");
+    }
+  }
+
+  /// ✅ Fetch notifications for a user
+  Future<List<dynamic>> fetchNotifications(String email) async {
+    final url = Uri.parse("$baseUrl/fetch_notifications.php?email=$email");
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data["notifications"] ?? [];
+    } else {
+      throw Exception("Failed to fetch notifications");
+    }
+  }
+
+  /// ✅ Mark a notification as read
+  Future<Map<String, dynamic>> markNotificationAsRead(
+      int notificationId) async {
+    final url = Uri.parse("$baseUrl/mark_notification_read.php");
+
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: json.encode({"id": notificationId}),
+    );
+
+    if (response.statusCode == 200) {
+      return json
+          .decode(response.body); // { "status": "success", "message": "..." }
+    } else {
+      throw Exception("Failed to mark notification as read");
     }
   }
 }
